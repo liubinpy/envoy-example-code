@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  front-envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+      - ./front-envoy.yaml:/etc/envoy/envoy.yaml
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.35.2
+    ports:
+      - "80:80"
+      - "9901:9901"
+    expose:
+      - "80"
+      - "9901"
+
+  webserver01-sidecar:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+    - ./envoy-sidecar-proxy.yaml:/etc/envoy/envoy.yaml
+    hostname: red
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.35.11
+        aliases:
+        - webserver
+        - red
+
+  webserver01:
+    image: docker.io/cloudbennie/http-server:1.0
+    environment:
+      - PORT=8080
+      - HOST=127.0.0.1
+    network_mode: "service:webserver01-sidecar"
+    depends_on:
+    - webserver01-sidecar
+
+  webserver02-sidecar:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+    - ./envoy-sidecar-proxy.yaml:/etc/envoy/envoy.yaml
+    hostname: blue
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.35.12
+        aliases:
+        - webserver
+        - blue
+
+  webserver02:
+    image: docker.io/cloudbennie/http-server:1.0
+    environment:
+      - PORT=8080
+      - HOST=127.0.0.1
+    network_mode: "service:webserver02-sidecar"
+    depends_on:
+    - webserver02-sidecar
+networks:
+  envoymesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.35.0/24

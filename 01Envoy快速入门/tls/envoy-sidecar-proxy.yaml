@@ -1,0 +1,73 @@
+admin:
+  profile_path: /tmp/envoy.prof
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+       address: 0.0.0.0
+       port_value: 9901
+
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 80 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          codec_type: AUTO
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service 
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: local_cluster }
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          common_tls_context:
+            tls_certificates:
+            - certificate_chain:
+                inline_string: |
+                  -----BEGIN CERTIFICATE-----
+                  MIICDzCCAbWgAwIBAgIUELrhgN8M/7Y1kzuEu6aZavGP1q8wCgYIKoZIzj0EAwIw
+                  SDELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1TYW4gRnJhbmNp
+                  c2NvMRQwEgYDVQQDEwtleGFtcGxlLm5ldDAeFw0yMzEwMTcwNzQ0MDBaFw0yNDEw
+                  MTYwNzQ0MDBaMEgxCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEWMBQGA1UEBxMN
+                  U2FuIEZyYW5jaXNjbzEUMBIGA1UEAxMLZXhhbXBsZS5uZXQwWTATBgcqhkjOPQIB
+                  BggqhkjOPQMBBwNCAARpHdRsgumWq7nsgUr+c0jaaENofUcjNyYQ6hLXej5oEi6v
+                  L7r6xSWY4WvkjvzUNgkBdA4ieHRl3U/kIQtULUWLo30wezAOBgNVHQ8BAf8EBAMC
+                  BaAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU
+                  tzebA8rXmdNQyaTtQPQzbhebXrgwJwYDVR0RBCAwHoILZXhhbXBsZS5uZXSCD3d3
+                  dy5leGFtcGxlLm5ldDAKBggqhkjOPQQDAgNIADBFAiBYoJQgN2khAKEqiNLn49xe
+                  TAxMfGMtYKw9Z/TAeQ7PmgIhALoDXy5ut36oRfgjz/PPBohUQ503C0utWoGOBQzI
+                  qjmW
+                  -----END CERTIFICATE-----
+              private_key:
+                inline_string: |
+                  -----BEGIN EC PRIVATE KEY-----
+                  MHcCAQEEIJWRcHEBtOPPCruSxR6XeOExXnUoP2WZtjUUo4iG2r61oAoGCCqGSM49
+                  AwEHoUQDQgAEaR3UbILplqu57IFK/nNI2mhDaH1HIzcmEOoS13o+aBIury+6+sUl
+                  mOFr5I781DYJAXQOInh0Zd1P5CELVC1Fiw==
+                  -----END EC PRIVATE KEY-----
+  clusters:
+  - name: local_cluster
+    connect_timeout: 0.25s
+    type: STATIC
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: local_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: 127.0.0.1, port_value: 8080 }

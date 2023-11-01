@@ -1,0 +1,50 @@
+version: '3.3'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+    - ./envoy.yaml:/etc/envoy/envoy.yaml
+    environment:
+      - ENVOY_UID=0
+      - ENVOY_GID=0
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.4.2
+        aliases:
+        - front-proxy
+    depends_on:
+    - webserver01
+    - webserver02
+  
+  netshoot:
+    image: nicolaka/netshoot:latest
+    network_mode: "service:envoy"
+    command: /bin/bash -c "while true; do ping -c 1 localhost; sleep 60;done"
+    depends_on:
+    - envoy
+    
+  webserver01:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: webserver01
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.4.11
+        aliases:
+        - webserver01
+
+  webserver02:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: webserver02
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.4.12
+        aliases:
+        - webserver02
+
+networks:
+  envoymesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.4.0/24

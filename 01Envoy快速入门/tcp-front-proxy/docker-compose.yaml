@@ -1,0 +1,52 @@
+# Author: MageEdu <mage@magedu.com>
+# Site: www.magedu.com
+version: '3.3'
+
+services:
+  envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+    - ./envoy.yaml:/etc/envoy/envoy.yaml
+    environment:
+      - ENVOY_UID=0
+      - ENVOY_GID=0
+    ports:
+      - "8080:8080"
+      - "9901:9901"
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.1.2
+        aliases:
+        - front-proxy
+    depends_on:
+    - webserver01
+    - webserver02
+
+  webserver01:
+    image: docker.io/cloudbennie/http-server:1.0
+    environment:
+      - PORT=8080
+    hostname: webserver01
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.1.11
+        aliases:
+        - webserver01
+
+  webserver02:
+    image: docker.io/cloudbennie/http-server:1.0
+    environment:
+      - PORT=8080
+    hostname: webserver02
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.1.12
+        aliases:
+        - webserver02
+
+networks:
+  envoymesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.1.0/24

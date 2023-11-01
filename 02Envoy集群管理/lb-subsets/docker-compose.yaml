@@ -1,0 +1,97 @@
+version: '3'
+
+services:
+  front-envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    volumes:
+      - ./front-envoy.yaml:/etc/envoy/envoy.yaml
+    ports:
+      - "8080:8080"
+      - "9901:9901"
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.2
+
+  e1:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e1
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.11
+        aliases:
+          - e1
+    expose:
+      - "80"
+
+  e2:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e2
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.12
+        aliases:
+          - e2
+    expose:
+      - "80"
+
+  e3:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e3
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.13
+        aliases:
+          - e3
+    expose:
+      - "80"
+
+  e4:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e4
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.14
+        aliases:
+          - e4
+    expose:
+      - "80"
+
+  e5:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e5
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.15
+        aliases:
+          - e5
+    expose:
+      - "80"
+
+  e6:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e6
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.16
+        aliases:
+          - e6
+    expose:
+      - "80"
+
+  e7:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: e7
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.33.17
+        aliases:
+          - e7
+    expose:
+      - "80"
+
+networks:
+  envoymesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.33.0/24
