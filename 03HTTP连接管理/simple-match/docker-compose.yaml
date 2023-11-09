@@ -1,0 +1,69 @@
+version: '3'
+services:
+  front-envoy:
+    image: envoyproxy/envoy:v1.23-latest
+    environment:
+      - ENVOY_UID=0
+      - ENVOY_GID=0
+    volumes:
+      - ./front-envoy.yaml:/etc/envoy/envoy.yaml
+    depends_on:
+    - prod
+    - gray
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.50.10
+    ports:
+    - "8088:8088"
+    - "9901:9901"
+  prod:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: prod
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.50.12
+        aliases:
+        - prod
+    expose:
+      - "8080"
+  gray:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: gray
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.50.11
+        aliases:
+        - gray
+    expose:
+      - "8080"      
+  red:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: red
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.50.14
+        aliases:
+        - red
+  yellow:
+    image: docker.io/cloudbennie/http-server:1.0
+    hostname: yellow
+    networks:
+      envoymesh:
+        ipv4_address: 172.31.50.15
+        aliases:
+        - yellow
+    expose:
+      - "8080"   
+  # netshoot:
+  #   image: nicolaka/netshoot:latest
+  #   network_mode: "service:front-envoy"
+  #   command: /bin/bash -c "while true; do ping -c 1 localhost; sleep 60;done"
+  #   depends_on:
+  #   - front-envoy
+
+networks:
+  envoymesh:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.50.0/24

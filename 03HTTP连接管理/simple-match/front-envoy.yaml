@@ -1,0 +1,126 @@
+admin:
+  profile_path: /tmp/envoy.prof
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+       address: 0.0.0.0
+       port_value: 9901
+
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 8088 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          codec_type: AUTO
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: vhost0
+              domains: ["bennie.io", "*.bennie.io", "bennie.*"]
+              routes:
+              - match:
+                  path: "/health"
+                route:
+                  cluster: prod
+              - match:
+                  safe_regex: 
+                    google_re2: {}
+                    regex: "^/health/.*"
+                redirect:
+                  path_redirect: "/health"
+              - match:
+                  prefix: "/direct"
+                direct_response:
+                  status: 200
+                  body:
+                    inline_string: "This page will be provided soon later.\n"
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: prod
+            - name: vhost1
+              domains: ["*"]
+              routes:
+              - match:
+                  prefix: "/"
+                  headers:
+                  - name: X-Canary
+                    exact_match: 'red'
+                route:
+                  cluster: red
+              - match:
+                  prefix: "/"
+                  query_parameters:
+                  - name: "canary"
+                    string_match:
+                      prefix: "true"
+                route:
+                  cluster: yellow
+              - match:
+                  prefix: "/"
+                route:
+                  cluster: gray
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+  - name: prod
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: prod
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: prod
+                port_value: 8080
+  - name: gray
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: gray
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gray
+                port_value: 8080
+  - name: red
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: red
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: red
+                port_value: 8080
+  - name: yellow
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: yellow
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: yellow
+                port_value: 8080

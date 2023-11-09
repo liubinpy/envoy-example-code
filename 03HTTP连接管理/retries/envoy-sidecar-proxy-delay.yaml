@@ -27,6 +27,15 @@ static_resources:
               - match: { prefix: "/" }
                 route: { cluster: local_cluster }
           http_filters:
+          - name: envoy.filters.http.fault
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
+              max_active_faults: 100
+              delay:
+                fixed_delay: 10s
+                percentage:
+                  numerator: 10
+                  denominator: HUNDRED
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
